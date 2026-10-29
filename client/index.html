@@ -1,0 +1,1792 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>HarvestHub — Farm Management & Crop Planning</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Playfair+Display:ital,wght@0,600;0,700;0,800;1,600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/src/css/styles.css">
+  <!-- Chart.js for data visualization with Canvas fallback -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+</head>
+<body>
+  <!-- Header -->
+  <header class="app-header">
+    <div class="header-inner">
+      <div class="brand-wrapper" onclick="App.switchTab('landing')" style="cursor: pointer;" title="Go to HarvestHub Showcase">
+        <div class="brand-icon">🌾</div>
+        <div>
+          <div class="brand-title">Harvest<span>Hub</span></div>
+          <div class="brand-subtitle">Farm Management & Crop Planning System</div>
+        </div>
+      </div>
+
+      <!-- Quick Global Search Bar -->
+      <div class="header-search">
+        <span class="search-icon">🔍</span>
+        <input type="text" id="global-search-input" placeholder="Search fields, operations, equipment, crops..." oninput="App.handleGlobalSearch(this.value)">
+      </div>
+
+      <div class="weather-badge" id="weather-banner">
+        <span id="weather-temp">Loading weather...</span>
+        <span class="weather-tag" id="weather-spray">Spraying: Checking...</span>
+      </div>
+
+      <div class="header-actions" id="header-actions-area">
+        <!-- These action buttons only show when logged in (controlled by renderAuthHeader) -->
+        <div id="header-logged-in-actions" style="display:none; gap:0.5rem; align-items:center; display:none;">
+          <button class="btn btn-primary btn-sm" onclick="App.openAddOperationModal()">+ Schedule Operation</button>
+          <button class="btn btn-outline btn-sm" style="color: #ffffff; border-color: rgba(255,255,255,0.3);" onclick="App.openLogHoursModal()">⏱️ Log Hours</button>
+        </div>
+        
+        <!-- User Profile & Authentication Header Area -->
+        <div id="header-auth-area" class="header-auth-area">
+          <button class="btn btn-auth-signin btn-sm" onclick="App.openAuthModal('login')">🔑 Sign In</button>
+          <button class="btn btn-auth-signup btn-sm" onclick="App.openAuthModal('signup')">✨ Sign Up</button>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- Navigation Tabs -->
+  <nav class="tabs-nav">
+    <div class="tabs-container">
+      <button class="tab-btn active" id="tab-btn-landing" data-tab="landing">
+        🌱 Home & Overview
+      </button>
+      <button class="tab-btn" id="tab-btn-dashboard" data-tab="dashboard">
+        <span class="tab-lock-indicator">🔒</span> <span class="tab-text">Overview</span>
+      </button>
+      <button class="tab-btn" id="tab-btn-fields" data-tab="fields">
+        <span class="tab-lock-indicator">🔒</span> <span class="tab-text">Fields & Map</span>
+      </button>
+      <button class="tab-btn" id="tab-btn-rotations" data-tab="rotations">
+        <span class="tab-lock-indicator">🔒</span> <span class="tab-text">Rotation Matrix</span>
+      </button>
+      <button class="tab-btn" id="tab-btn-operations" data-tab="operations">
+        <span class="tab-lock-indicator">🔒</span> <span class="tab-text">Field Operations</span>
+      </button>
+      <button class="tab-btn" id="tab-btn-analytics" data-tab="analytics">
+        <span class="tab-lock-indicator">🔒</span> <span class="tab-text">Cost & Yield (P&L)</span>
+      </button>
+      <button class="tab-btn" id="tab-btn-equipment" data-tab="equipment">
+        <span class="tab-lock-indicator">🔒</span> <span class="tab-text">Machinery</span>
+        <span class="tab-badge" id="maint-alert-badge" style="display: none;">0</span>
+      </button>
+    </div>
+  </nav>
+
+  <!-- Main Container -->
+  <main class="main-content">
+    
+    <!-- Tab 0: Interactive Landing Page & Crop Showcase -->
+    <section id="landing" class="tab-panel active">
+      <!-- Hero Section -->
+      <div class="landing-hero">
+        <div class="hero-overlay"></div>
+        <div class="hero-inner">
+          <div class="hero-badge">
+            <span class="hero-badge-dot"></span>
+            <span>Agronomic Intelligence & Precision Farm OS</span>
+          </div>
+
+          <h1 class="hero-headline">
+            Cultivate Resilience.<br>
+            <span>Master Your Crop Rotations.</span>
+          </h1>
+
+          <p class="hero-subhead">
+            Harness scientific crop succession, georeferenced field operations, machinery health telemetry,
+            and real-time profit analytics with <strong>HarvestAI</strong> agronomic copilot.
+          </p>
+
+          <div class="hero-cta-group">
+            <button class="btn btn-hero-primary" onclick="App.switchTab('dashboard')">
+              <span>🌾</span> Enter Farm Dashboard
+            </button>
+            <button class="btn btn-hero-secondary" onclick="App.switchTab('rotations')">
+              <span>🔄</span> Launch Rotation Matrix
+            </button>
+            <button class="btn btn-hero-secondary" onclick="App.switchTab('fields')">
+              <span>🗺️</span> 2D Field Visualizer
+            </button>
+            <button class="btn btn-hero-ai" onclick="App.toggleAICopilot()">
+              <span>🤖</span> Launch HarvestAI
+            </button>
+          </div>
+
+          <!-- Animated Live Telemetry Stat Counters -->
+          <div class="hero-stats-strip">
+            <div class="hero-stat-card" onclick="App.switchTab('fields')" style="cursor: pointer;" title="Inspect Active Acreage">
+              <div class="hero-stat-num" id="landing-stat-acres">980</div>
+              <div class="hero-stat-label">Total Acres Monitored</div>
+              <div class="hero-stat-hint">Across 8 contiguous plots</div>
+            </div>
+
+            <div class="hero-stat-card" onclick="App.switchTab('rotations')" style="cursor: pointer;" title="Inspect Rotation Health">
+              <div class="hero-stat-num" id="landing-stat-health">94%</div>
+              <div class="hero-stat-label">Rotation Health Index</div>
+              <div class="hero-stat-hint">Optimal biological succession</div>
+            </div>
+
+            <div class="hero-stat-card" onclick="App.switchTab('analytics')" style="cursor: pointer;" title="View Financial Ledger">
+              <div class="hero-stat-num" id="landing-stat-profit">$325K</div>
+              <div class="hero-stat-label">Realized Net Profit</div>
+              <div class="hero-stat-hint">48.2% operating margin</div>
+            </div>
+
+            <div class="hero-stat-card" onclick="App.switchTab('operations')" style="cursor: pointer;" title="Manage Work Orders">
+              <div class="hero-stat-num" id="landing-stat-ops">11</div>
+              <div class="hero-stat-label">Season Work Orders</div>
+              <div class="hero-stat-hint">Fieldwork, sprays & planting</div>
+            </div>
+
+            <div class="hero-stat-card" onclick="App.switchTab('equipment')" style="cursor: pointer;" title="Inspect Machine Fleet">
+              <div class="hero-stat-num" id="landing-stat-equip">8</div>
+              <div class="hero-stat-label">Machinery Units</div>
+              <div class="hero-stat-hint">Predictive service tracking</div>
+            </div>
+          </div>
+
+          <!-- Instant Role-Based Demo Persona Bar -->
+          <div class="landing-personas-bar">
+            <div class="personas-label">
+              <span class="personas-dot"></span>
+              <strong>Experience HarvestHub by Farm Role (Instant Demo Sign-In):</strong>
+            </div>
+            <div class="personas-chips">
+              <button class="persona-chip manager" onclick="App.quickLoginAs('sarah@willowcreek.farm', 'farm123')">
+                <span class="persona-avatar">👩‍🌾</span>
+                <div class="persona-info">
+                  <span class="persona-name">Sarah Jenkins</span>
+                  <span class="persona-role">Farm Manager (Executive P&L)</span>
+                </div>
+                <span class="persona-arrow">→</span>
+              </button>
+              <button class="persona-chip agronomist" onclick="App.quickLoginAs('jake@willowcreek.farm', 'farm123')">
+                <span class="persona-avatar">🌱</span>
+                <div class="persona-info">
+                  <span class="persona-name">Jake Thornton</span>
+                  <span class="persona-role">Lead Agronomist (Rotations & Soil)</span>
+                </div>
+                <span class="persona-arrow">→</span>
+              </button>
+              <button class="persona-chip tech" onclick="App.quickLoginAs('marcus@willowcreek.farm', 'farm123')">
+                <span class="persona-avatar">🔧</span>
+                <div class="persona-info">
+                  <span class="persona-name">Marcus Vance</span>
+                  <span class="persona-role">Fleet Tech (Diagnostics & Hours)</span>
+                </div>
+                <span class="persona-arrow">→</span>
+              </button>
+              <button class="persona-chip custom" onclick="App.openAuthModal('signup')">
+                <span class="persona-avatar">✨</span>
+                <div class="persona-info">
+                  <span class="persona-name">New Grower</span>
+                  <span class="persona-role">Create Custom Farm Profile</span>
+                </div>
+                <span class="persona-arrow">+</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Interactive Mini Crop Rotation Sandbox with Real Agriculture Backdrop -->
+      <div class="landing-simulator-section">
+        <div class="sim-bg-overlay"></div>
+        <div class="sim-inner">
+          <div class="sim-header">
+            <div>
+              <span class="section-eyebrow" style="color: #6ee7b7;">Interactive Agronomic Sandbox</span>
+              <h2 class="section-heading" style="color: #ffffff;">Test 4-Year Crop Succession Live</h2>
+              <p class="section-subtext" style="color: #cbd5e1;">
+                Experiment with biological succession cycles right here. See how alternating nitrogen-fixing legumes and cereal grasses boosts soil health and unlocks nutrient credits before logging in.
+              </p>
+            </div>
+            <div class="sim-score-badge-wrap">
+              <div class="sim-score-num" id="landing-sim-score">96%</div>
+              <div class="sim-score-meta">
+                <span class="sim-score-tag" id="landing-sim-rating">Optimal Succession</span>
+                <span class="sim-score-sub">Biological Synergy Index</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- 4-Season Interactive Crop Selector Strip -->
+          <div class="sim-slots-grid">
+            <div class="sim-slot-card">
+              <div class="sim-slot-label">Year 1 (Base Grain)</div>
+              <select class="sim-slot-select" id="landing-sim-slot-0" onchange="App.handleLandingSimChange(0, this.value)">
+                <option value="1" selected>Corn (Zea mays)</option>
+                <option value="2">Soybeans (Glycine max)</option>
+                <option value="3">Winter Wheat (T. aestivum)</option>
+                <option value="4">Alfalfa (M. sativa)</option>
+                <option value="5">Field Peas (P. sativum)</option>
+                <option value="6">Canola (B. napus)</option>
+                <option value="7">Sunflowers (H. annuus)</option>
+                <option value="8">Crimson Clover (T. incarnatum)</option>
+              </select>
+              <div class="sim-slot-badge" id="landing-sim-badge-0">Heavy Feeder</div>
+            </div>
+
+            <div class="sim-arrow-divider">➔</div>
+
+            <div class="sim-slot-card">
+              <div class="sim-slot-label">Year 2 (Soil Armor)</div>
+              <select class="sim-slot-select" id="landing-sim-slot-1" onchange="App.handleLandingSimChange(1, this.value)">
+                <option value="1">Corn (Zea mays)</option>
+                <option value="2" selected>Soybeans (Glycine max)</option>
+                <option value="3">Winter Wheat (T. aestivum)</option>
+                <option value="4">Alfalfa (M. sativa)</option>
+                <option value="5">Field Peas (P. sativum)</option>
+                <option value="6">Canola (B. napus)</option>
+                <option value="7">Sunflowers (H. annuus)</option>
+                <option value="8">Crimson Clover (T. incarnatum)</option>
+              </select>
+              <div class="sim-slot-badge legume" id="landing-sim-badge-1">Nitrogen Fixer</div>
+            </div>
+
+            <div class="sim-arrow-divider">➔</div>
+
+            <div class="sim-slot-card">
+              <div class="sim-slot-label">Year 3 (Cereal Break)</div>
+              <select class="sim-slot-select" id="landing-sim-slot-2" onchange="App.handleLandingSimChange(2, this.value)">
+                <option value="1">Corn (Zea mays)</option>
+                <option value="2">Soybeans (Glycine max)</option>
+                <option value="3" selected>Winter Wheat (T. aestivum)</option>
+                <option value="4">Alfalfa (M. sativa)</option>
+                <option value="5">Field Peas (P. sativum)</option>
+                <option value="6">Canola (B. napus)</option>
+                <option value="7">Sunflowers (H. annuus)</option>
+                <option value="8">Crimson Clover (T. incarnatum)</option>
+              </select>
+              <div class="sim-slot-badge" id="landing-sim-badge-2">Moderate Feeder</div>
+            </div>
+
+            <div class="sim-arrow-divider">➔</div>
+
+            <div class="sim-slot-card">
+              <div class="sim-slot-label">Year 4 (Cover / Forage)</div>
+              <select class="sim-slot-select" id="landing-sim-slot-3" onchange="App.handleLandingSimChange(3, this.value)">
+                <option value="1">Corn (Zea mays)</option>
+                <option value="2">Soybeans (Glycine max)</option>
+                <option value="3">Winter Wheat (T. aestivum)</option>
+                <option value="4">Alfalfa (M. sativa)</option>
+                <option value="5">Field Peas (P. sativum)</option>
+                <option value="6">Canola (B. napus)</option>
+                <option value="7">Sunflowers (H. annuus)</option>
+                <option value="8" selected>Crimson Clover (T. incarnatum)</option>
+              </select>
+              <div class="sim-slot-badge legume" id="landing-sim-badge-3">Nitrogen Fixer</div>
+            </div>
+          </div>
+
+          <!-- Live Agronomic Diagnostics Ticker -->
+          <div class="sim-diagnostics-box" id="landing-sim-diagnostics">
+            <div class="sim-diag-item success">
+              <span>🌱</span> <strong>Nitrogen Credit:</strong> Legume preceding corn fixes ~40 lbs/acre atmospheric N, reducing synthetic fertilizer inputs.
+            </div>
+            <div class="sim-diag-item success">
+              <span>🛡️</span> <strong>Pest Break:</strong> 3-family botanical diversity disrupts corn rootworm and soybean cyst nematode propagation.
+            </div>
+            <div class="sim-diag-item info">
+              <span>💧</span> <strong>Water Infiltration:</strong> Alternating shallow fibrous roots with deep taproots prevents subsurface hardpan compaction.
+            </div>
+          </div>
+
+          <div class="sim-footer-cta">
+            <span>Ready to apply multi-year rotations across all 8 fields with geo-mapped GIS?</span>
+            <button class="btn btn-hero-primary btn-sm" onclick="App.switchTab('rotations')">
+              Launch Full 8-Field Matrix 🔒
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Section: Real Crop Varieties Catalog -->
+      <div class="landing-section">
+        <div class="landing-section-header">
+          <div>
+            <div class="section-eyebrow">Botanical Library & Crop Profiles</div>
+            <h2 class="section-heading">High-Yield Crops & Soil Armor Varieties</h2>
+            <p class="section-subtext">Click any crop card to inspect root architecture, nutrient cycling demand, and biological companion synergies.</p>
+          </div>
+          <button class="btn btn-outline" onclick="App.switchTab('rotations')">
+            🔄 Test Rotations in Matrix →
+          </button>
+        </div>
+
+        <!-- Crop Category Filter Chips -->
+        <div class="crop-filter-pills" id="crop-filter-pills">
+          <button class="crop-filter-btn active" data-category="all" onclick="App.filterLandingCrops('all', this)">🌾 All Varieties (10)</button>
+          <button class="crop-filter-btn" data-category="Legume" onclick="App.filterLandingCrops('Legume', this)">🌱 Legumes & N-Fixers (4)</button>
+          <button class="crop-filter-btn" data-category="Grass" onclick="App.filterLandingCrops('Grass', this)">🌾 Cereal Grains & Grasses (4)</button>
+          <button class="crop-filter-btn" data-category="Mustard" onclick="App.filterLandingCrops('Mustard', this)">🌻 Oilseeds & Brassicas (2)</button>
+        </div>
+
+        <!-- Dynamic Real Crop Cards Container -->
+        <div class="crop-cards-showcase-grid" id="landing-crops-showcase">
+          <!-- Populated by App.renderLandingPage() with real high-res images -->
+          <div style="grid-column: 1/-1; text-align: center; padding: 2rem; color: var(--text-muted);">
+            Loading real crop photo cards...
+          </div>
+        </div>
+      </div>
+
+      <!-- Section: Interactive Farm Management Pillars -->
+      <div class="landing-section" style="padding-top: 0;">
+        <div class="landing-section-header">
+          <div>
+            <div class="section-eyebrow">Integrated AgTech Platform</div>
+            <h2 class="section-heading">Everything Required to Run Willow Creek Farm</h2>
+            <p class="section-subtext">Built specifically for mid-to-large-scale grain and forage producers.</p>
+          </div>
+        </div>
+
+        <div class="pillars-grid">
+          <div class="pillar-card" onclick="App.switchTab('rotations')">
+            <div class="pillar-img-header" style="background-image: url('https://images.unsplash.com/photo-1574323347407-f5e1ad6d020b?w=600&auto=format&fit=crop&q=80');">
+              <div class="pillar-overlay"></div>
+              <div class="pillar-icon-badge">🔄</div>
+              <div class="pillar-tag">Rule Engine</div>
+            </div>
+            <div class="pillar-body">
+              <h3 class="pillar-title">4-Year Agronomic Succession</h3>
+              <p class="pillar-desc">
+                Automated biological scoring flags monoculture pest risks, awards nitrogen-fixing legume credits,
+                and balances shallow vs deep taproot water extraction.
+              </p>
+              <div class="pillar-footer">
+                <span class="pillar-link">Open Rotation Matrix →</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="pillar-card" onclick="App.switchTab('fields')">
+            <div class="pillar-img-header" style="background-image: url('https://images.unsplash.com/photo-1625246333195-78d9c38ad449?w=600&auto=format&fit=crop&q=80');">
+              <div class="pillar-overlay"></div>
+              <div class="pillar-icon-badge">🗺️</div>
+              <div class="pillar-tag">Visual GIS</div>
+            </div>
+            <div class="pillar-body">
+              <h3 class="pillar-title">Interactive 2D Farm Layout</h3>
+              <p class="pillar-desc">
+                Vector visualizer of all 8 field boundaries with live multi-layer overlays for active crop canopy,
+                soil pH acidity, center-pivot irrigation, and pending work orders.
+              </p>
+              <div class="pillar-footer">
+                <span class="pillar-link">Explore Field Map →</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="pillar-card" onclick="App.switchTab('operations')">
+            <div class="pillar-img-header" style="background-image: url('https://images.unsplash.com/photo-1592982537447-7440770cbfc9?w=600&auto=format&fit=crop&q=80');">
+              <div class="pillar-overlay"></div>
+              <div class="pillar-icon-badge">📌</div>
+              <div class="pillar-tag">Kanban Board</div>
+            </div>
+            <div class="pillar-body">
+              <h3 class="pillar-title">Field Operations & Work Orders</h3>
+              <p class="pillar-desc">
+                Drag-and-drop workflow tracking for tillage, planting, side-dress fertilizer, chemical sprays, and harvest.
+                Every operation links directly to direct input expense ledgers.
+              </p>
+              <div class="pillar-footer">
+                <span class="pillar-link">View Kanban Board →</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="pillar-card" onclick="App.switchTab('analytics')">
+            <div class="pillar-img-header" style="background-image: url('https://images.unsplash.com/photo-1500382017468-9049fed747ef?w=600&auto=format&fit=crop&q=80');">
+              <div class="pillar-overlay"></div>
+              <div class="pillar-icon-badge">📈</div>
+              <div class="pillar-tag">P&L Economics</div>
+            </div>
+            <div class="pillar-body">
+              <h3 class="pillar-title">Realized Cost & Yield Analytics</h3>
+              <p class="pillar-desc">
+                Interactive what-if profitability sandbox with real-time sliders for grain market pricing,
+                direct per-acre chemical/seed costs, and multi-year Chart.js visualizations.
+              </p>
+              <div class="pillar-footer">
+                <span class="pillar-link">Analyze Financials →</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="pillar-card" onclick="App.switchTab('equipment')">
+            <div class="pillar-img-header" style="background-image: url('https://images.unsplash.com/photo-1562684750-61d02c892850?w=600&auto=format&fit=crop&q=80');">
+              <div class="pillar-overlay"></div>
+              <div class="pillar-icon-badge">🔧</div>
+              <div class="pillar-tag">Fleet Telemetry</div>
+            </div>
+            <div class="pillar-body">
+              <h3 class="pillar-title">Predictive Fleet Maintenance</h3>
+              <p class="pillar-desc">
+                Monitor operating engine hour meters on John Deere tractors and Case IH combines.
+                Instant stepper hour logging, service thresholds, and AI vibration/hydraulic diagnostics.
+              </p>
+              <div class="pillar-footer">
+                <span class="pillar-link">Manage Machinery →</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="pillar-card" onclick="App.toggleAICopilot()">
+            <div class="pillar-img-header" style="background-image: url('https://images.unsplash.com/photo-1551754655-cd27e38d2076?w=600&auto=format&fit=crop&q=80');">
+              <div class="pillar-overlay"></div>
+              <div class="pillar-icon-badge">🤖</div>
+              <div class="pillar-tag">HarvestAI</div>
+            </div>
+            <div class="pillar-body">
+              <h3 class="pillar-title">Precision Agronomic Copilot</h3>
+              <p class="pillar-desc">
+                Contextual AI assistant powered by Gemini API with built-in AgriBrain agronomy rules fallback.
+                Analyzes weather feasibility, pest pressure risks, and one-click crop recommendations.
+              </p>
+              <div class="pillar-footer">
+                <span class="pillar-link">Ask HarvestAI →</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Section: Interactive Farm Management Pillars -->
+      <div class="landing-section" style="padding-top: 0;">
+        <div class="landing-section-header">
+          <div>
+            <div class="section-eyebrow">Integrated AgTech Platform</div>
+            <h2 class="section-heading">Six Integrated Modules — One Farm OS</h2>
+            <p class="section-subtext">Sign in to unlock the full suite built for mid-to-large scale grain and forage producers.</p>
+          </div>
+        </div>
+
+        <div class="pillars-grid">
+          <div class="pillar-card pillar-locked" onclick="App.switchTab('dashboard')">
+            <div class="pillar-img-header" style="background-image: url('https://images.unsplash.com/photo-1500382017468-9049fed747ef?w=600&auto=format&fit=crop&q=80');">
+              <div class="pillar-overlay"></div>
+              <div class="pillar-icon-badge">📊</div>
+              <div class="pillar-tag">Live Dashboard</div>
+            </div>
+            <div class="pillar-body">
+              <h3 class="pillar-title">Farm Operations Overview</h3>
+              <p class="pillar-desc">Real-time KPI dashboard with acreage totals, maintenance alerts, pending work orders, and financial performance at a glance.</p>
+              <div class="pillar-footer"><span class="pillar-link">Open Dashboard →</span></div>
+            </div>
+          </div>
+
+          <div class="pillar-card pillar-locked" onclick="App.switchTab('rotations')">
+            <div class="pillar-img-header" style="background-image: url('https://images.unsplash.com/photo-1574323347407-f5e1ad6d020b?w=600&auto=format&fit=crop&q=80');">
+              <div class="pillar-overlay"></div>
+              <div class="pillar-icon-badge">🔄</div>
+              <div class="pillar-tag">Rule Engine</div>
+            </div>
+            <div class="pillar-body">
+              <h3 class="pillar-title">4-Year Agronomic Succession</h3>
+              <p class="pillar-desc">Automated biological scoring flags monoculture pest risks, awards nitrogen-fixing legume credits, and balances deep vs shallow root water extraction.</p>
+              <div class="pillar-footer"><span class="pillar-link">Open Rotation Matrix →</span></div>
+            </div>
+          </div>
+
+          <div class="pillar-card pillar-locked" onclick="App.switchTab('fields')">
+            <div class="pillar-img-header" style="background-image: url('https://images.unsplash.com/photo-1625246333195-78d9c38ad449?w=600&auto=format&fit=crop&q=80');">
+              <div class="pillar-overlay"></div>
+              <div class="pillar-icon-badge">🗺️</div>
+              <div class="pillar-tag">Visual GIS</div>
+            </div>
+            <div class="pillar-body">
+              <h3 class="pillar-title">Interactive 2D Farm Layout</h3>
+              <p class="pillar-desc">Vector visualizer of all 8 field boundaries with live multi-layer overlays for active crop canopy, soil pH, center-pivot irrigation, and pending work orders.</p>
+              <div class="pillar-footer"><span class="pillar-link">Explore Field Map →</span></div>
+            </div>
+          </div>
+
+          <div class="pillar-card pillar-locked" onclick="App.switchTab('operations')">
+            <div class="pillar-img-header" style="background-image: url('https://images.unsplash.com/photo-1592982537447-7440770cbfc9?w=600&auto=format&fit=crop&q=80');">
+              <div class="pillar-overlay"></div>
+              <div class="pillar-icon-badge">📌</div>
+              <div class="pillar-tag">Kanban Board</div>
+            </div>
+            <div class="pillar-body">
+              <h3 class="pillar-title">Field Operations & Work Orders</h3>
+              <p class="pillar-desc">Drag-and-drop workflow tracking for tillage, planting, side-dress fertilizer, chemical sprays, and harvest — linked directly to expense ledgers.</p>
+              <div class="pillar-footer"><span class="pillar-link">View Kanban Board →</span></div>
+            </div>
+          </div>
+
+          <div class="pillar-card pillar-locked" onclick="App.switchTab('analytics')">
+            <div class="pillar-img-header" style="background-image: url('https://images.unsplash.com/photo-1560493676-04071c5f467b?w=600&auto=format&fit=crop&q=80');">
+              <div class="pillar-overlay"></div>
+              <div class="pillar-icon-badge">📈</div>
+              <div class="pillar-tag">P&L Economics</div>
+            </div>
+            <div class="pillar-body">
+              <h3 class="pillar-title">Realized Cost & Yield Analytics</h3>
+              <p class="pillar-desc">Interactive what-if profitability sandbox with real-time sliders for grain market pricing, per-acre costs, and multi-year Chart.js visualizations.</p>
+              <div class="pillar-footer"><span class="pillar-link">Analyze Financials →</span></div>
+            </div>
+          </div>
+
+          <div class="pillar-card pillar-locked" onclick="App.switchTab('equipment')">
+            <div class="pillar-img-header" style="background-image: url('https://images.unsplash.com/photo-1562684750-61d02c892850?w=600&auto=format&fit=crop&q=80');">
+              <div class="pillar-overlay"></div>
+              <div class="pillar-icon-badge">🔧</div>
+              <div class="pillar-tag">Fleet Telemetry</div>
+            </div>
+            <div class="pillar-body">
+              <h3 class="pillar-title">Predictive Fleet Maintenance</h3>
+              <p class="pillar-desc">Monitor engine hours on John Deere tractors and Case IH combines. Instant hour logging, service thresholds, and AI vibration diagnostics.</p>
+              <div class="pillar-footer"><span class="pillar-link">Manage Machinery →</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Bottom CTA Banner -->
+      <div class="landing-cta-banner" id="landing-cta-banner">
+        <div class="cta-banner-content">
+          <div class="cta-banner-badge" id="landing-cta-badge">🔒 Sign In to Get Started</div>
+          <h3 class="cta-banner-title" id="landing-cta-title">Your Farm Dashboard Awaits</h3>
+          <p class="cta-banner-text" id="landing-cta-text">8 fields mapped • 10 crop varieties loaded • 15 automated tests verified • Real-time weather active</p>
+        </div>
+        <div class="cta-banner-actions" id="landing-cta-actions">
+          <button class="btn btn-auth-signup" style="font-size:1rem; padding: 0.8rem 1.8rem;" onclick="App.openAuthModal('signup')">
+            <span>✨</span> Create Farm Account
+          </button>
+          <button class="btn btn-hero-secondary" onclick="App.openAuthModal('login')">
+            🔑 Sign In
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <!-- Tab 1: Dashboard / Overview -->
+    <section id="dashboard" class="tab-panel">
+      <div class="kpi-grid">
+        <div class="kpi-card" onclick="App.switchTab('fields')" style="cursor: pointer;">
+          <div class="kpi-header">
+            <span class="kpi-title">Total Acreage</span>
+            <span class="kpi-icon">🌾</span>
+          </div>
+          <div class="kpi-value" id="kpi-acreage">--</div>
+          <div class="kpi-footer">
+            <span class="kpi-badge success" id="kpi-active-fields">-- Active Fields</span>
+          </div>
+        </div>
+
+        <div class="kpi-card blue" onclick="App.switchTab('rotations')" style="cursor: pointer;">
+          <div class="kpi-header">
+            <span class="kpi-title">Rotation Health Index</span>
+            <span class="kpi-icon">🔄</span>
+          </div>
+          <div class="kpi-value" id="kpi-rotation-score">--%</div>
+          <div class="kpi-footer">
+            <span class="kpi-badge success" id="kpi-rotation-rating">Optimal Succession</span>
+          </div>
+        </div>
+
+        <div class="kpi-card amber" onclick="App.switchTab('operations')" style="cursor: pointer;">
+          <div class="kpi-header">
+            <span class="kpi-title">Pending Operations</span>
+            <span class="kpi-icon">🚜</span>
+          </div>
+          <div class="kpi-value" id="kpi-pending-ops">--</div>
+          <div class="kpi-footer">
+            <span class="kpi-badge amber" id="kpi-completed-ops">-- Completed this season</span>
+          </div>
+        </div>
+
+        <div class="kpi-card red" id="kpi-maint-card" onclick="App.switchTab('equipment')" style="cursor: pointer;">
+          <div class="kpi-header">
+            <span class="kpi-title">Maintenance Alerts</span>
+            <span class="kpi-icon">⚠️</span>
+          </div>
+          <div class="kpi-value" id="kpi-overdue-maint">--</div>
+          <div class="kpi-footer">
+            <span class="kpi-badge danger" id="kpi-due-soon-maint">-- machines due soon</span>
+          </div>
+        </div>
+
+        <div class="kpi-card" onclick="App.switchTab('analytics')" style="cursor: pointer;">
+          <div class="kpi-header">
+            <span class="kpi-title">Farm Net Profit (Realized)</span>
+            <span class="kpi-icon">💵</span>
+          </div>
+          <div class="kpi-value" id="kpi-net-profit">$--</div>
+          <div class="kpi-footer">
+            <span class="kpi-badge success" id="kpi-margin-pct">--% Operating Margin</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Weather & Field Feasibility Box -->
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">🌦️ Agricultural Weather & Field Sprayability Index</div>
+          <span style="font-size: 0.82rem; color: var(--text-muted);" id="weather-location">Central Station</span>
+        </div>
+        <div class="grid-2">
+          <div>
+            <div style="display: flex; align-items: baseline; gap: 0.75rem; margin-bottom: 0.75rem;">
+              <span style="font-size: 2.2rem; font-weight: 800;" id="weather-temp-large">68°F</span>
+              <span style="font-size: 1.1rem; color: var(--text-muted);" id="weather-condition-desc">Partly Cloudy</span>
+            </div>
+            <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.75rem; margin-bottom: 1rem;">
+              <div style="background: #f8fafc; padding: 0.6rem; border-radius: var(--radius-sm); border: 1px solid var(--border);">
+                <div style="font-size: 0.72rem; color: var(--text-muted);">Wind Speed</div>
+                <div style="font-weight: 700; font-size: 0.95rem;" id="weather-wind">6.5 mph SSE</div>
+              </div>
+              <div style="background: #f8fafc; padding: 0.6rem; border-radius: var(--radius-sm); border: 1px solid var(--border);">
+                <div style="font-size: 0.72rem; color: var(--text-muted);">Soil Temp (4")</div>
+                <div style="font-weight: 700; font-size: 0.95rem;" id="weather-soil-temp">57.2°F</div>
+              </div>
+              <div style="background: #f8fafc; padding: 0.6rem; border-radius: var(--radius-sm); border: 1px solid var(--border);">
+                <div style="font-size: 0.72rem; color: var(--text-muted);">Soil Moisture</div>
+                <div style="font-weight: 700; font-size: 0.95rem;" id="weather-soil-moist">22.4%</div>
+              </div>
+            </div>
+            <div id="weather-advice-box" style="padding: 0.75rem 1rem; border-radius: var(--radius-md); background: #ecfdf5; border-left: 4px solid var(--primary); font-size: 0.85rem; color: #065f46;">
+              <strong>Spray Window:</strong> Ideal wind and humidity. Minimal risk of droplet drift.
+            </div>
+          </div>
+          <div>
+            <div style="font-size: 0.85rem; font-weight: 700; margin-bottom: 0.6rem; color: var(--text-muted);">5-Day Fieldwork Forecast</div>
+            <div id="forecast-cards" style="display: flex; gap: 0.6rem; overflow-x: auto;"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Quick Action Grid -->
+      <div class="grid-2">
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">🚜 Upcoming Operations</div>
+            <button class="btn btn-outline btn-sm" onclick="App.switchTab('operations')">View All</button>
+          </div>
+          <div id="dashboard-recent-ops">Loading operations...</div>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">⚠️ Priority Equipment Maintenance</div>
+            <button class="btn btn-outline btn-sm" onclick="App.switchTab('equipment')">Manage Fleet</button>
+          </div>
+          <div id="dashboard-recent-maint">Loading alerts...</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Tab 2: Fields & Interactive Farm Map -->
+    <section id="fields" class="tab-panel">
+      <!-- 2D Interactive Farm Map -->
+      <div class="farm-map-wrapper">
+        <div class="map-toolbar">
+          <div style="color: #ffffff; font-weight: 700; font-size: 1.05rem; display: flex; align-items: center; gap: 0.5rem;">
+            🗺️ <span>Interactive Farm Layout Visualizer</span>
+            <span style="font-size: 0.75rem; color: #94a3b8; font-weight: 400;">(Click any field to inspect)</span>
+          </div>
+          <div style="display: flex; gap: 0.4rem;">
+            <button class="map-layer-btn active" id="btn-layer-crop" onclick="App.setMapLayer('crop')">🌾 Active Crops</button>
+            <button class="map-layer-btn" id="btn-layer-soil" onclick="App.setMapLayer('soil')">🌱 Soil & pH</button>
+            <button class="map-layer-btn" id="btn-layer-irrigation" onclick="App.setMapLayer('irrigation')">💧 Irrigation</button>
+            <button class="map-layer-btn" id="btn-layer-operations" onclick="App.setMapLayer('operations')">🚜 Work Orders</button>
+          </div>
+        </div>
+
+        <!-- SVG Map Container -->
+        <div style="position: relative;">
+          <svg class="farm-svg" id="farm-svg-canvas" viewBox="0 0 1000 450"></svg>
+          <div class="map-tooltip" id="map-tooltip"></div>
+        </div>
+      </div>
+
+      <div class="card-header" style="margin-bottom: 1.5rem;">
+        <div>
+          <h2 style="font-size: 1.35rem; font-weight: 700;">Farm Field Registry & Soil Data</h2>
+          <p style="font-size: 0.85rem; color: var(--text-muted);">Manage acreage, soil composition, pH levels, and current active crops.</p>
+        </div>
+        <button class="btn btn-primary" onclick="App.openAddFieldModal()">+ Add New Field</button>
+      </div>
+
+      <div class="grid-cards" id="fields-grid">Loading fields...</div>
+    </section>
+
+    <!-- Tab 3: Crop Rotation Matrix & Agronomic Planner -->
+    <section id="rotations" class="tab-panel">
+      <div class="card-header" style="margin-bottom: 1rem;">
+        <div>
+          <h2 style="font-size: 1.35rem; font-weight: 700;">Multi-Year Crop Rotation Matrix (2023 - 2027)</h2>
+          <p style="font-size: 0.85rem; color: var(--text-muted);">Drag or click crops from the palette into matrix cells to test biological succession and live nitrogen balance.</p>
+        </div>
+        <div style="display: flex; gap: 0.6rem;">
+          <button class="btn btn-outline" onclick="App.openAIRotationModal()">✨ AI Auto-Recommend Crop</button>
+          <button class="btn btn-primary" onclick="App.openRotationSimulatorModal()">🧪 Interactive 4-Season Sandbox</button>
+        </div>
+      </div>
+
+      <!-- Quick Crop Palette Tray for fast assignment -->
+      <div class="crop-palette-tray">
+        <span style="font-size: 0.78rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase;">Quick Palette:</span>
+        <div id="crop-palette-items" style="display: flex; gap: 0.5rem; flex-wrap: wrap;"></div>
+        <span style="font-size: 0.75rem; color: var(--text-muted); margin-left: auto;">💡 Tip: Click a crop chip then click any matrix cell</span>
+      </div>
+
+      <!-- Matrix Table -->
+      <div class="matrix-wrapper card" style="padding: 0; margin-bottom: 1.5rem;">
+        <table class="matrix-table" id="matrix-table">
+          <thead>
+            <tr>
+              <th style="width: 220px;">Field Name</th>
+              <th>2023</th>
+              <th>2024</th>
+              <th>2025</th>
+              <th style="background: #ecfdf5; color: #065f46;">2026 (Active)</th>
+              <th>2027 (Planned)</th>
+              <th style="width: 140px;">Agronomic Score</th>
+            </tr>
+          </thead>
+          <tbody id="matrix-tbody">
+            <tr><td colspan="7" style="text-align: center; padding: 2rem;">Loading rotation matrix...</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Selected Field Agronomic Evaluation Panel -->
+      <div class="card" id="field-eval-panel" style="display: none;">
+        <div class="card-header">
+          <div class="card-title">
+            <span>🔬 Agronomic Rule Validation Engine:</span>
+            <span id="eval-field-title" style="color: var(--primary-dark);">Field Evaluation</span>
+          </div>
+          <button class="btn btn-outline btn-sm" onclick="App.closeFieldEvalPanel()">Close</button>
+        </div>
+
+        <div class="eval-box">
+          <div class="eval-header">
+            <div>
+              <div style="font-size: 1.1rem; font-weight: 700;" id="eval-rating-text">Optimal Rotation</div>
+              <div style="font-size: 0.82rem; color: var(--text-muted);">Pest break cycles, nitrogen cycling, and root depth analysis</div>
+            </div>
+            <div class="eval-score-ring" id="eval-score-badge">95%</div>
+          </div>
+
+          <div id="eval-alerts-container"></div>
+          <div id="eval-positives-container"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Tab 4: Field Operations -->
+    <section id="operations" class="tab-panel">
+      <div class="card-header" style="margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem;">
+        <div>
+          <h2 style="font-size: 1.35rem; font-weight: 700;">Field Operations & Work Orders</h2>
+          <p style="font-size: 0.85rem; color: var(--text-muted);">Track tillage, planting, fertilization, chemical spraying, and harvests with input ledgers.</p>
+        </div>
+        <div style="display: flex; gap: 0.6rem; align-items: center; flex-wrap: wrap;">
+          <!-- View Switcher -->
+          <div style="background: #e2e8f0; padding: 2px; border-radius: var(--radius-md); display: flex;">
+            <button class="btn btn-sm btn-outline active" id="view-btn-kanban" onclick="App.setOperationsView('kanban')">📌 Kanban Board</button>
+            <button class="btn btn-sm btn-outline" id="view-btn-table" onclick="App.setOperationsView('table')">📋 Table View</button>
+          </div>
+
+          <select class="form-select" id="op-filter-type" onchange="App.filterOperations()" style="width: auto;">
+            <option value="">All Operation Types</option>
+            <option value="Tillage">Tillage</option>
+            <option value="Planting">Planting</option>
+            <option value="Fertilization">Fertilization</option>
+            <option value="Spraying">Spraying</option>
+            <option value="Irrigation">Irrigation</option>
+            <option value="Scouting">Scouting</option>
+            <option value="Harvest">Harvest</option>
+          </select>
+
+          <button class="btn btn-primary" onclick="App.openAddOperationModal()">+ New Work Order</button>
+        </div>
+      </div>
+
+      <!-- Interactive Kanban Board View (Default) -->
+      <div id="operations-kanban-view" class="kanban-board">
+        <div class="kanban-column planned" ondragover="App.handleDragOver(event)" ondrop="App.handleDrop(event, 'Planned')">
+          <div class="kanban-column-header">
+            <span>📅 Planned / Scheduled</span>
+            <span class="badge badge-planned" id="kanban-count-planned">0</span>
+          </div>
+          <div class="kanban-cards-container" id="kanban-cards-planned">Loading...</div>
+        </div>
+
+        <div class="kanban-column in-progress" ondragover="App.handleDragOver(event)" ondrop="App.handleDrop(event, 'In Progress')">
+          <div class="kanban-column-header">
+            <span>🚜 In Progress</span>
+            <span class="badge badge-warning" id="kanban-count-progress">0</span>
+          </div>
+          <div class="kanban-cards-container" id="kanban-cards-progress">Loading...</div>
+        </div>
+
+        <div class="kanban-column completed" ondragover="App.handleDragOver(event)" ondrop="App.handleDrop(event, 'Completed')">
+          <div class="kanban-column-header">
+            <span>✓ Completed</span>
+            <span class="badge badge-active" id="kanban-count-completed">0</span>
+          </div>
+          <div class="kanban-cards-container" id="kanban-cards-completed">Loading...</div>
+        </div>
+      </div>
+
+      <!-- Table View -->
+      <div id="operations-table-view" class="table-wrapper" style="display: none;">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Operation Title</th>
+              <th>Field</th>
+              <th>Target Crop</th>
+              <th>Scheduled</th>
+              <th>Assigned To</th>
+              <th>Priority</th>
+              <th>Inputs / Supplies</th>
+              <th>Input Cost</th>
+              <th>Status</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="operations-tbody">
+            <tr><td colspan="10" style="text-align: center; padding: 2rem;">Loading operations...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- Tab 5: Cost & Yield Analytics (P&L) -->
+    <section id="analytics" class="tab-panel">
+      <!-- Reactive What-If Crop Profitability Calculator -->
+      <div class="card" style="background: linear-gradient(135deg, #064e3b 0%, #065f46 100%); color: #ffffff;">
+        <div class="card-header" style="border-bottom-color: rgba(255,255,255,0.15);">
+          <div class="card-title" style="color: #ffffff;">
+            <span>🧮 Interactive What-If Crop Profitability Sandbox</span>
+          </div>
+          <span style="font-size: 0.8rem; color: #a7f3d0;">Test hypothetical market prices & input scenarios</span>
+        </div>
+
+        <div class="grid-2">
+          <div>
+            <div class="form-group" style="margin-bottom: 0.85rem;">
+              <label class="form-label" style="color: #a7f3d0;">Select Crop to Simulate</label>
+              <select class="form-select" id="sim-calc-crop" onchange="App.handleSimulatorCropChange(this.value)" style="background: rgba(255,255,255,0.15); color: #ffffff; border-color: rgba(255,255,255,0.3);"></select>
+            </div>
+
+            <div class="slider-container">
+              <div class="slider-label-row">
+                <span style="color: #d1fae5;">Market Sale Price</span>
+                <span id="slider-val-price" style="color: #ffffff; font-weight: 700;">$4.85 / bu</span>
+              </div>
+              <input type="range" class="range-slider" id="slider-price" min="2.00" max="25.00" step="0.05" value="4.85" oninput="App.recalcProfitSimulator()">
+            </div>
+
+            <div class="slider-container">
+              <div class="slider-label-row">
+                <span style="color: #d1fae5;">Expected Harvest Yield per Acre</span>
+                <span id="slider-val-yield" style="color: #ffffff; font-weight: 700;">188 bu/ac</span>
+              </div>
+              <input type="range" class="range-slider" id="slider-yield" min="20" max="300" step="1" value="188" oninput="App.recalcProfitSimulator()">
+            </div>
+
+            <div class="slider-container">
+              <div class="slider-label-row">
+                <span style="color: #d1fae5;">Direct Operating Cost per Acre (Seed, Fertilizer, Sprays, Fuel)</span>
+                <span id="slider-val-cost" style="color: #ffffff; font-weight: 700;">$420 / ac</span>
+              </div>
+              <input type="range" class="range-slider" id="slider-cost" min="100" max="900" step="10" value="420" oninput="App.recalcProfitSimulator()">
+            </div>
+          </div>
+
+          <!-- Dynamic Output Metrics Box -->
+          <div style="background: rgba(0, 0, 0, 0.25); border-radius: var(--radius-md); padding: 1.25rem; display: flex; flex-direction: column; justify-content: space-around; border: 1px solid rgba(255,255,255,0.15);">
+            <div style="display: flex; justify-content: space-between; align-items: baseline; border-bottom: 1px solid rgba(255,255,255,0.15); padding-bottom: 0.6rem;">
+              <span style="color: #a7f3d0; font-size: 0.85rem;">Gross Revenue / Acre:</span>
+              <span style="font-size: 1.4rem; font-weight: 800;" id="sim-out-revenue">$911.80</span>
+            </div>
+            <div style="display: flex; justify-content: space-between; align-items: baseline; border-bottom: 1px solid rgba(255,255,255,0.15); padding-bottom: 0.6rem;">
+              <span style="color: #a7f3d0; font-size: 0.85rem;">Net Profit / Acre:</span>
+              <span style="font-size: 1.6rem; font-weight: 800; color: #a7f3d0;" id="sim-out-profit">$491.80</span>
+            </div>
+            <div style="display: flex; justify-content: space-between; align-items: baseline; border-bottom: 1px solid rgba(255,255,255,0.15); padding-bottom: 0.6rem;">
+              <span style="color: #a7f3d0; font-size: 0.85rem;">Net Operating Margin:</span>
+              <span style="font-size: 1.4rem; font-weight: 800;" id="sim-out-margin">53.9%</span>
+            </div>
+            <div style="display: flex; justify-content: space-between; align-items: baseline;">
+              <span style="color: #a7f3d0; font-size: 0.85rem;">Projected 120-Ac Field Total Profit:</span>
+              <span style="font-size: 1.4rem; font-weight: 800;" id="sim-out-field-profit">$59,016</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card-header" style="margin-bottom: 1.5rem;">
+        <div>
+          <h2 style="font-size: 1.35rem; font-weight: 700;">Cost & Yield Financial Analytics (P&L)</h2>
+          <p style="font-size: 0.85rem; color: var(--text-muted);">Multi-year harvest revenues, direct input expenses, margins, and crop profitability breakdown.</p>
+        </div>
+        <div style="display: flex; gap: 0.6rem;">
+          <button class="btn btn-primary" onclick="App.openAIFinancialInsightsModal()">✨ AI Executive Insights</button>
+          <button class="btn btn-outline" onclick="App.exportFinancialsCSV()">📥 Export Ledger to CSV</button>
+        </div>
+      </div>
+
+      <!-- Analytics Charts Grid -->
+      <div class="grid-2">
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">📊 Annual Revenue vs Input Cost vs Net Profit</div>
+          </div>
+          <div style="height: 280px; position: relative;">
+            <canvas id="chart-annual-pnl"></canvas>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">💰 Net Profit by Crop ($ USD)</div>
+          </div>
+          <div style="height: 280px; position: relative;">
+            <canvas id="chart-crop-margin"></canvas>
+          </div>
+        </div>
+      </div>
+
+      <div class="grid-2">
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">🧪 Input Expense Distribution by Category</div>
+          </div>
+          <div style="height: 280px; position: relative;">
+            <canvas id="chart-input-distribution"></canvas>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">🌾 Actual Yield vs Target Benchmark</div>
+          </div>
+          <div style="height: 280px; position: relative;">
+            <canvas id="chart-yield-target"></canvas>
+          </div>
+        </div>
+      </div>
+
+      <!-- Financial Performance Table -->
+      <div class="card" style="padding: 0;">
+        <div style="padding: 1.25rem 1.5rem; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center;">
+          <div class="card-title">📋 Multi-Year Harvest & Profit Ledger</div>
+          <span style="font-size: 0.78rem; color: var(--text-muted);">Click column headers to sort</span>
+        </div>
+        <div class="table-wrapper" style="border: none;">
+          <table class="data-table" id="pnl-table">
+            <thead>
+              <tr>
+                <th onclick="App.sortPNLTable('year')">Year ↕</th>
+                <th onclick="App.sortPNLTable('field_name')">Field ↕</th>
+                <th onclick="App.sortPNLTable('crop_name')">Crop ↕</th>
+                <th onclick="App.sortPNLTable('harvest_date')">Harvest Date ↕</th>
+                <th onclick="App.sortPNLTable('yield_per_acre')">Yield / Acre ↕</th>
+                <th onclick="App.sortPNLTable('total_yield')">Total Yield ↕</th>
+                <th onclick="App.sortPNLTable('sale_price_per_unit')">Sale Price ↕</th>
+                <th onclick="App.sortPNLTable('moisture_pct')">Moisture % ↕</th>
+                <th onclick="App.sortPNLTable('total_revenue')">Gross Revenue ↕</th>
+                <th onclick="App.sortPNLTable('total_input_cost')">Input Expenses ↕</th>
+                <th onclick="App.sortPNLTable('net_profit')">Net Profit ↕</th>
+                <th>Margin %</th>
+              </tr>
+            </thead>
+            <tbody id="pnl-tbody">
+              <tr><td colspan="12" style="text-align: center; padding: 2rem;">Loading financial ledger...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- Tab 6: Machinery & Equipment Maintenance -->
+    <section id="equipment" class="tab-panel">
+      <div class="card-header" style="margin-bottom: 1.5rem;">
+        <div>
+          <h2 style="font-size: 1.35rem; font-weight: 700;">Farm Machinery Fleet & Service Schedules</h2>
+          <p style="font-size: 0.85rem; color: var(--text-muted);">Monitor operating hour meters, preventive service thresholds, and maintenance logs.</p>
+        </div>
+        <div style="display: flex; gap: 0.6rem;">
+          <button class="btn btn-outline" onclick="App.openLogHoursModal()">⏱️ Log Engine Hours</button>
+          <button class="btn btn-primary" onclick="App.openAddEquipmentModal()">+ Add Machinery</button>
+        </div>
+      </div>
+
+      <div class="grid-cards" id="equipment-grid">Loading machinery fleet...</div>
+    </section>
+  </main>
+
+  <!-- ==================== MODALS ==================== -->
+
+  <!-- Modal: Assign Crop to Rotation Matrix -->
+  <div class="modal-overlay" id="modal-assign-crop">
+    <div class="modal-dialog">
+      <div class="modal-header">
+        <div class="modal-title" id="assign-crop-title">Assign Crop to Rotation</div>
+        <button class="modal-close" onclick="App.closeModal('modal-assign-crop')">&times;</button>
+      </div>
+      <div class="modal-body">
+        <form id="form-assign-crop" onsubmit="App.handleAssignCropSubmit(event)">
+          <input type="hidden" id="assign-field-id">
+          <input type="hidden" id="assign-year">
+          <input type="hidden" id="assign-season" value="Spring">
+
+          <div class="form-group">
+            <label class="form-label">Select Crop Variety</label>
+            <select class="form-select" id="assign-crop-id" required>
+              <option value="">-- Choose crop from catalog --</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Target Yield per Acre</label>
+            <input type="number" step="0.1" class="form-input" id="assign-target-yield" placeholder="e.g. 190.0">
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Status</label>
+            <select class="form-select" id="assign-status">
+              <option value="Planned">Planned</option>
+              <option value="Planted">Planted</option>
+              <option value="Harvested">Harvested</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Agronomic Notes</label>
+            <textarea class="form-textarea" id="assign-notes" rows="2" placeholder="e.g. Inoculated seed, following cover crop"></textarea>
+          </div>
+
+          <div class="modal-footer" style="padding-left: 0; padding-right: 0; background: transparent; border-top: none;">
+            <button type="button" class="btn btn-outline" onclick="App.closeModal('modal-assign-crop')">Cancel</button>
+            <button type="submit" class="btn btn-primary">Save to Matrix</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: Interactive 4-Season Rotation Simulator Sandbox -->
+  <div class="modal-overlay" id="modal-rotation-simulator">
+    <div class="modal-dialog wide">
+      <div class="modal-header">
+        <div class="modal-title">🧪 Interactive Crop Rotation What-If Sandbox</div>
+        <button class="modal-close" onclick="App.closeModal('modal-rotation-simulator')">&times;</button>
+      </div>
+      <div class="modal-body">
+        <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 1.25rem;">
+          Assemble a multi-season crop sequence below. The agronomic engine validates nutrient cycling, pest breaks, and soil armor in real time.
+        </p>
+
+        <!-- 4 Sequence Slots -->
+        <div class="simulator-slots">
+          <div class="sim-slot filled" id="sim-slot-0">
+            <div style="font-size: 0.72rem; font-weight: 700; color: var(--text-muted);">Year 1 (Spring)</div>
+            <select class="form-select" style="margin-top: 0.4rem; font-size: 0.82rem;" onchange="App.handleSimSlotChange(0, this.value)" id="sim-select-0"></select>
+          </div>
+          <div class="sim-slot filled" id="sim-slot-1">
+            <div style="font-size: 0.72rem; font-weight: 700; color: var(--text-muted);">Year 2 (Spring)</div>
+            <select class="form-select" style="margin-top: 0.4rem; font-size: 0.82rem;" onchange="App.handleSimSlotChange(1, this.value)" id="sim-select-1"></select>
+          </div>
+          <div class="sim-slot filled" id="sim-slot-2">
+            <div style="font-size: 0.72rem; font-weight: 700; color: var(--text-muted);">Year 3 (Spring)</div>
+            <select class="form-select" style="margin-top: 0.4rem; font-size: 0.82rem;" onchange="App.handleSimSlotChange(2, this.value)" id="sim-select-2"></select>
+          </div>
+          <div class="sim-slot filled" id="sim-slot-3">
+            <div style="font-size: 0.72rem; font-weight: 700; color: var(--text-muted);">Year 3 (Fall Cover)</div>
+            <select class="form-select" style="margin-top: 0.4rem; font-size: 0.82rem;" onchange="App.handleSimSlotChange(3, this.value)" id="sim-select-3"></select>
+          </div>
+        </div>
+
+        <!-- Live Dynamic Score & Agronomic Feedback Box -->
+        <div class="eval-box" style="margin-top: 0;">
+          <div class="eval-header">
+            <div>
+              <div style="font-size: 1.15rem; font-weight: 700;" id="sim-rating-text">Optimal Rotation</div>
+              <div style="font-size: 0.82rem; color: var(--text-muted);" id="sim-summary-text">Evaluating nutrient balance and family breaks...</div>
+            </div>
+            <div class="eval-score-ring" id="sim-score-dial">95%</div>
+          </div>
+
+          <div id="sim-alerts-box"></div>
+          <div id="sim-positives-box"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: Add New Field -->
+  <div class="modal-overlay" id="modal-add-field">
+    <div class="modal-dialog">
+      <div class="modal-header">
+        <div class="modal-title">Add New Farm Field</div>
+        <button class="modal-close" onclick="App.closeModal('modal-add-field')">&times;</button>
+      </div>
+      <div class="modal-body">
+        <form id="form-add-field" onsubmit="App.handleAddFieldSubmit(event)">
+          <div class="form-group">
+            <label class="form-label">Field Name</label>
+            <input type="text" class="form-input" id="new-field-name" placeholder="e.g. West Meadow Section 12" required>
+          </div>
+
+          <div class="grid-2">
+            <div class="form-group">
+              <label class="form-label">Total Acreage</label>
+              <input type="number" step="0.1" class="form-input" id="new-field-acreage" placeholder="e.g. 120.0" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Soil Type</label>
+              <select class="form-select" id="new-field-soil" required>
+                <option value="Silt Loam">Silt Loam</option>
+                <option value="Clay Loam">Clay Loam</option>
+                <option value="Sandy Loam">Sandy Loam</option>
+                <option value="Alluvial Silt Loam">Alluvial Silt Loam</option>
+                <option value="Black Chernozem Loam">Black Chernozem Loam</option>
+                <option value="Silty Clay">Silty Clay</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="grid-2">
+            <div class="form-group">
+              <label class="form-label">Soil pH Level</label>
+              <input type="number" step="0.1" class="form-input" id="new-field-ph" value="6.5">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Organic Matter %</label>
+              <input type="number" step="0.1" class="form-input" id="new-field-om" value="3.2">
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Irrigation System</label>
+            <select class="form-select" id="new-field-irrigation">
+              <option value="Center Pivot">Center Pivot</option>
+              <option value="Drip/Furrow">Drip/Furrow</option>
+              <option value="Rainfed">Rainfed (Dryland)</option>
+              <option value="Subsurface Drip">Subsurface Drip</option>
+            </select>
+          </div>
+
+          <div class="modal-footer" style="padding-left: 0; padding-right: 0; background: transparent; border-top: none;">
+            <button type="button" class="btn btn-outline" onclick="App.closeModal('modal-add-field')">Cancel</button>
+            <button type="submit" class="btn btn-primary">Create Field</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: Field Detail & History -->
+  <div class="modal-overlay" id="modal-field-detail">
+    <div class="modal-dialog wide">
+      <div class="modal-header">
+        <div class="modal-title" id="field-detail-name">Field Details</div>
+        <button class="modal-close" onclick="App.closeModal('modal-field-detail')">&times;</button>
+      </div>
+      <div class="modal-body" id="field-detail-content">Loading field history...</div>
+    </div>
+  </div>
+
+  <!-- Modal: Schedule Operation -->
+  <div class="modal-overlay" id="modal-add-operation">
+    <div class="modal-dialog">
+      <div class="modal-header">
+        <div class="modal-title">Schedule Field Work Order</div>
+        <button class="modal-close" onclick="App.closeModal('modal-add-operation')">&times;</button>
+      </div>
+      <div class="modal-body">
+        <form id="form-add-operation" onsubmit="App.handleAddOperationSubmit(event)">
+          <div class="form-group">
+            <label class="form-label">Operation Title</label>
+            <input type="text" class="form-input" id="new-op-title" placeholder="e.g. Post-Emergence Herbicide Spray" required>
+          </div>
+
+          <div class="grid-2">
+            <div class="form-group">
+              <label class="form-label">Field</label>
+              <select class="form-select" id="new-op-field-id" required></select>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Operation Type</label>
+              <select class="form-select" id="new-op-type" required>
+                <option value="Tillage">Tillage / Seedbed Prep</option>
+                <option value="Planting">Planting / Seeding</option>
+                <option value="Fertilization">Fertilization / Side-dress</option>
+                <option value="Spraying">Chemical Spraying</option>
+                <option value="Irrigation">Irrigation Run</option>
+                <option value="Scouting">Drone / Scouting</option>
+                <option value="Harvest">Harvesting</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="grid-2">
+            <div class="form-group">
+              <label class="form-label">Scheduled Date</label>
+              <input type="date" class="form-input" id="new-op-date" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Assigned Operator</label>
+              <input type="text" class="form-input" id="new-op-assigned" placeholder="e.g. Jake Miller" required>
+            </div>
+          </div>
+
+          <div class="grid-2">
+            <div class="form-group">
+              <label class="form-label">Priority</label>
+              <select class="form-select" id="new-op-priority">
+                <option value="Medium">Medium</option>
+                <option value="High">High</option>
+                <option value="Critical">Critical</option>
+                <option value="Low">Low</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Weather Pre-requisites</label>
+              <input type="text" class="form-input" id="new-op-weather" placeholder="e.g. Wind < 10mph, soil dry">
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Notes & Instructions</label>
+            <textarea class="form-textarea" id="new-op-notes" rows="2" placeholder="Machine settings, nozzle tips, target weeds"></textarea>
+          </div>
+
+          <div class="modal-footer" style="padding-left: 0; padding-right: 0; background: transparent; border-top: none;">
+            <button type="button" class="btn btn-outline" onclick="App.closeModal('modal-add-operation')">Cancel</button>
+            <button type="submit" class="btn btn-primary">Schedule Work Order</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: View & Add Inputs to Operation -->
+  <div class="modal-overlay" id="modal-operation-inputs">
+    <div class="modal-dialog wide">
+      <div class="modal-header">
+        <div class="modal-title" id="inputs-modal-title">Operation Inputs & Consumption Ledger</div>
+        <button class="modal-close" onclick="App.closeModal('modal-operation-inputs')">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div id="inputs-list-container" style="margin-bottom: 1.5rem;">Loading inputs...</div>
+
+        <div style="background: #f8fafc; border: 1px solid var(--border); border-radius: var(--radius-md); padding: 1.25rem;">
+          <h4 style="font-size: 0.95rem; font-weight: 700; margin-bottom: 0.85rem;">+ Add Input Consumption</h4>
+          <form id="form-add-input" onsubmit="App.handleAddInputSubmit(event)">
+            <input type="hidden" id="input-op-id">
+            <div class="grid-2">
+              <div class="form-group">
+                <label class="form-label">Product / Input Name</label>
+                <input type="text" class="form-input" id="new-input-name" placeholder="e.g. 28% UAN Liquid Nitrogen" required>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Category</label>
+                <select class="form-select" id="new-input-category">
+                  <option value="Fertilizer">Fertilizer</option>
+                  <option value="Chemical">Chemical / Herbicide / Fungicide</option>
+                  <option value="Seed">Seed</option>
+                  <option value="Fuel">Fuel (Diesel)</option>
+                  <option value="Labor">Operator Labor</option>
+                  <option value="Supplies">Supplies / Parts</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="grid-3">
+              <div class="form-group">
+                <label class="form-label">Quantity</label>
+                <input type="number" step="0.1" class="form-input" id="new-input-qty" placeholder="e.g. 100" required>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Unit</label>
+                <input type="text" class="form-input" id="new-input-unit" placeholder="e.g. gal, lbs, bags, hrs" required>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Cost per Unit ($)</label>
+                <input type="number" step="0.01" class="form-input" id="new-input-cpu" placeholder="e.g. 2.45" required>
+              </div>
+            </div>
+
+            <button type="submit" class="btn btn-primary btn-sm">+ Add Input Item</button>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: Log Equipment Operating Hours -->
+  <div class="modal-overlay" id="modal-log-hours">
+    <div class="modal-dialog">
+      <div class="modal-header">
+        <div class="modal-title">⏱️ Log Machinery Operating Hours</div>
+        <button class="modal-close" onclick="App.closeModal('modal-log-hours')">&times;</button>
+      </div>
+      <div class="modal-body">
+        <form id="form-log-hours" onsubmit="App.handleLogHoursSubmit(event)">
+          <div class="form-group">
+            <label class="form-label">Select Equipment</label>
+            <select class="form-select" id="log-hours-eq-id" onchange="App.handleEquipmentSelectChange(this.value)" required>
+              <option value="">-- Choose machine --</option>
+            </select>
+          </div>
+
+          <div style="background: #f8fafc; border: 1px solid var(--border); border-radius: var(--radius-md); padding: 0.85rem; margin-bottom: 1rem; font-size: 0.85rem;">
+            Current Meter: <strong id="log-current-meter-display">-- hrs</strong> | Next Service Target: <strong id="log-next-service-display">-- hrs</strong>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Hours to Add</label>
+            <input type="number" step="0.1" class="form-input" id="log-hours-add" placeholder="e.g. 8.5" required>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Remaining Fuel Tank %</label>
+            <input type="number" step="1" min="0" max="100" class="form-input" id="log-fuel-level" placeholder="e.g. 75">
+          </div>
+
+          <div class="modal-footer" style="padding-left: 0; padding-right: 0; background: transparent; border-top: none;">
+            <button type="button" class="btn btn-outline" onclick="App.closeModal('modal-log-hours')">Cancel</button>
+            <button type="submit" class="btn btn-primary">Update Operating Meter</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: Complete Service Ticket -->
+  <div class="modal-overlay" id="modal-complete-service">
+    <div class="modal-dialog">
+      <div class="modal-header">
+        <div class="modal-title">🔧 Complete Maintenance Service</div>
+        <button class="modal-close" onclick="App.closeModal('modal-complete-service')">&times;</button>
+      </div>
+      <div class="modal-body">
+        <form id="form-complete-service" onsubmit="App.handleCompleteServiceSubmit(event)">
+          <input type="hidden" id="service-eq-id">
+          <input type="hidden" id="service-task-id">
+
+          <div style="background: #f8fafc; border: 1px solid var(--border); border-radius: var(--radius-md); padding: 0.85rem; margin-bottom: 1rem; font-size: 0.85rem;">
+            Machine: <strong id="service-machine-name">--</strong><br>
+            Task: <strong id="service-task-name">--</strong>
+          </div>
+
+          <div class="grid-2">
+            <div class="form-group">
+              <label class="form-label">Service Date</label>
+              <input type="date" class="form-input" id="service-date" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Technician / Performed By</label>
+              <input type="text" class="form-input" id="service-tech" placeholder="e.g. Travis King" required>
+            </div>
+          </div>
+
+          <div class="grid-2">
+            <div class="form-group">
+              <label class="form-label">Total Cost ($ Parts & Labor)</label>
+              <input type="number" step="0.01" class="form-input" id="service-cost" placeholder="e.g. 385.00" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Hours Meter at Service</label>
+              <input type="number" step="0.1" class="form-input" id="service-hours-at" required>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Parts / Fluids Replaced</label>
+            <input type="text" class="form-input" id="service-parts" placeholder="e.g. John Deere Plus-50 II Oil, Primary Fuel Filter">
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Service Notes</label>
+            <textarea class="form-textarea" id="service-notes" rows="2" placeholder="Inspection checklist completed, zero leaks"></textarea>
+          </div>
+
+          <div class="modal-footer" style="padding-left: 0; padding-right: 0; background: transparent; border-top: none;">
+            <button type="button" class="btn btn-outline" onclick="App.closeModal('modal-complete-service')">Cancel</button>
+            <button type="submit" class="btn btn-primary">Log Service & Reset Target</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: Add Machinery to Fleet -->
+  <div class="modal-overlay" id="modal-add-equipment">
+    <div class="modal-dialog">
+      <div class="modal-header">
+        <div class="modal-title">Add Machinery to Fleet</div>
+        <button class="modal-close" onclick="App.closeModal('modal-add-equipment')">&times;</button>
+      </div>
+      <div class="modal-body">
+        <form id="form-add-equipment" onsubmit="App.handleAddEquipmentSubmit(event)">
+          <div class="form-group">
+            <label class="form-label">Equipment Name</label>
+            <input type="text" class="form-input" id="new-eq-name" placeholder="e.g. John Deere 8R 370" required>
+          </div>
+
+          <div class="grid-2">
+            <div class="form-group">
+              <label class="form-label">Category</label>
+              <select class="form-select" id="new-eq-category" required>
+                <option value="Tractor">Tractor</option>
+                <option value="Combine">Combine</option>
+                <option value="Sprayer">Sprayer</option>
+                <option value="Planter">Planter</option>
+                <option value="Tillage">Tillage Implement</option>
+                <option value="Irrigation">Irrigation</option>
+                <option value="Support / Loader">Support / Loader</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Model Specs</label>
+              <input type="text" class="form-input" id="new-eq-model" placeholder="e.g. 8R 370 AutoPowr IVT" required>
+            </div>
+          </div>
+
+          <div class="grid-2">
+            <div class="form-group">
+              <label class="form-label">Serial / PIN Number</label>
+              <input type="text" class="form-input" id="new-eq-serial" placeholder="e.g. 1RW8370PNN014921" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Model Year</label>
+              <input type="number" class="form-input" id="new-eq-year" value="2023" required>
+            </div>
+          </div>
+
+          <div class="grid-2">
+            <div class="form-group">
+              <label class="form-label">Current Operating Hours</label>
+              <input type="number" step="0.1" class="form-input" id="new-eq-hours" value="0" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Next Service Target (Hours)</label>
+              <input type="number" step="0.1" class="form-input" id="new-eq-next-service" value="100" required>
+            </div>
+          </div>
+
+          <div class="modal-footer" style="padding-left: 0; padding-right: 0; background: transparent; border-top: none;">
+            <button type="button" class="btn btn-outline" onclick="App.closeModal('modal-add-equipment')">Cancel</button>
+            <button type="submit" class="btn btn-primary">Add Machine</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: Equipment Service History Logs -->
+  <div class="modal-overlay" id="modal-equipment-history">
+    <div class="modal-dialog wide">
+      <div class="modal-header">
+        <div class="modal-title" id="history-modal-title">Machinery Maintenance History</div>
+        <button class="modal-close" onclick="App.closeModal('modal-equipment-history')">&times;</button>
+      </div>
+      <div class="modal-body" id="history-modal-content">Loading history logs...</div>
+    </div>
+  </div>
+
+  <!-- Modal: AI Crop Rotation Recommendation -->
+  <div class="modal-overlay" id="modal-ai-recommendation">
+    <div class="modal-dialog">
+      <div class="modal-header">
+        <div class="modal-title">✨ HarvestAI Crop Succession Recommendation</div>
+        <button class="modal-close" onclick="App.closeModal('modal-ai-recommendation')">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label class="form-label">Select Field to Optimize</label>
+          <select class="form-select" id="ai-rec-field-select" onchange="App.handleAIRecFieldChange(this.value)"></select>
+        </div>
+        <div id="ai-rec-result-content">Loading AI recommendation...</div>
+      </div>
+      <div class="modal-footer" id="ai-rec-footer">
+        <button class="btn btn-outline" onclick="App.closeModal('modal-ai-recommendation')">Close</button>
+        <button class="btn btn-primary" id="btn-apply-ai-rec" onclick="App.applyAIRotationRecommendation()">✓ Apply to Matrix</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: AI Machinery Diagnostics -->
+  <div class="modal-overlay" id="modal-ai-diagnostic">
+    <div class="modal-dialog wide">
+      <div class="modal-header">
+        <div class="modal-title" id="ai-diag-title">✨ Predictive Machinery Diagnostics</div>
+        <button class="modal-close" onclick="App.closeModal('modal-ai-diagnostic')">&times;</button>
+      </div>
+      <div class="modal-body" id="ai-diag-content">Analyzing machinery operating telemetry...</div>
+    </div>
+  </div>
+
+  <!-- Modal: AI Financial Executive Summary -->
+  <div class="modal-overlay" id="modal-ai-finance">
+    <div class="modal-dialog wide">
+      <div class="modal-header">
+        <div class="modal-title">✨ HarvestAI Executive Financial Insights</div>
+        <button class="modal-close" onclick="App.closeModal('modal-ai-finance')">&times;</button>
+      </div>
+      <div class="modal-body" id="ai-finance-content">Synthesizing harvest performance...</div>
+    </div>
+  </div>
+
+  <!-- Modal: Crop Botanical & Agronomic Detail -->
+  <div class="modal-overlay" id="modal-crop-detail">
+    <div class="modal-dialog wide">
+      <div class="modal-header">
+        <div class="modal-title" id="crop-detail-title">Crop Agronomic Profile</div>
+        <button class="modal-close" onclick="App.closeModal('modal-crop-detail')">&times;</button>
+      </div>
+      <div class="modal-body" id="crop-detail-content">Loading crop profile...</div>
+    </div>
+  </div>
+
+  <!-- Modal: User Authentication (Sign In & Sign Up) -->
+  <div class="modal-overlay" id="modal-auth">
+    <div class="modal-dialog" style="max-width: 460px;">
+      <div class="modal-header">
+        <div class="modal-title" id="auth-modal-title">Sign In to HarvestHub</div>
+        <button class="modal-close" onclick="App.closeModal('modal-auth')">&times;</button>
+      </div>
+
+      <div class="modal-body" style="padding-top: 1rem;">
+        <!-- Auth Mode Switcher Tabs -->
+        <div class="auth-tabs">
+          <button class="auth-tab active" id="tab-auth-login" onclick="App.setAuthMode('login')">🔑 Sign In</button>
+          <button class="auth-tab" id="tab-auth-signup" onclick="App.setAuthMode('signup')">✨ Create Account</button>
+        </div>
+
+        <!-- Quick 1-Click Demo Profiles (For Instant Testing) -->
+        <div class="demo-profiles-strip">
+          <div class="demo-profiles-title">⚡ Instant 1-Click Demo Sign-in:</div>
+          <div class="demo-profiles-grid">
+            <button class="demo-profile-btn" onclick="App.quickLoginAs('sarah@willowcreek.farm', 'farm123')">
+              <span class="demo-avatar">👩‍🌾</span>
+              <div>
+                <strong>Sarah Jenkins</strong>
+                <small>Farm Manager</small>
+              </div>
+            </button>
+            <button class="demo-profile-btn" onclick="App.quickLoginAs('jake@willowcreek.farm', 'farm123')">
+              <span class="demo-avatar">🚜</span>
+              <div>
+                <strong>Jake Miller</strong>
+                <small>Lead Agronomist</small>
+              </div>
+            </button>
+            <button class="demo-profile-btn" onclick="App.quickLoginAs('marcus@willowcreek.farm', 'farm123')">
+              <span class="demo-avatar">🔧</span>
+              <div>
+                <strong>Marcus Vance</strong>
+                <small>Machinery Tech</small>
+              </div>
+            </button>
+          </div>
+        </div>
+
+        <!-- Login Form -->
+        <form id="form-auth-login" onsubmit="App.handleLoginSubmit(event)">
+          <div class="form-group">
+            <label class="form-label">Email Address</label>
+            <input type="email" class="form-input" id="login-email" placeholder="e.g. sarah@willowcreek.farm" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Password</label>
+            <input type="password" class="form-input" id="login-password" placeholder="Enter password (demo: farm123)" required>
+          </div>
+          <button type="submit" class="btn btn-primary" style="width: 100%; padding: 0.75rem; margin-top: 0.5rem; font-size: 0.95rem;">
+            Sign In to Farm Dashboard
+          </button>
+        </form>
+
+        <!-- Sign Up Form (hidden by default) -->
+        <form id="form-auth-signup" onsubmit="App.handleSignupSubmit(event)" style="display: none;">
+          <div class="form-group">
+            <label class="form-label">Full Name</label>
+            <input type="text" class="form-input" id="signup-name" placeholder="e.g. Emily Thorne" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Email Address</label>
+            <input type="email" class="form-input" id="signup-email" placeholder="e.g. emily@thornefarms.com" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Password</label>
+            <input type="password" class="form-input" id="signup-password" placeholder="Choose a secure password (min 4 chars)" required>
+          </div>
+          <div class="grid-2">
+            <div class="form-group">
+              <label class="form-label">Role in Farm</label>
+              <select class="form-select" id="signup-role">
+                <option value="Farm Manager">Farm Manager</option>
+                <option value="Lead Agronomist">Lead Agronomist</option>
+                <option value="Equipment Operator">Equipment Operator</option>
+                <option value="Crop Scout">Crop Scout</option>
+                <option value="Owner / Partner">Owner / Partner</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Farm Organization</label>
+              <input type="text" class="form-input" id="signup-farm" value="Willow Creek Farm" required>
+            </div>
+          </div>
+          <button type="submit" class="btn btn-primary" style="width: 100%; padding: 0.75rem; margin-top: 0.5rem; font-size: 0.95rem;">
+            Create Farm Account & Enter
+          </button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: User Profile Settings -->
+  <div class="modal-overlay" id="modal-profile">
+    <div class="modal-dialog">
+      <div class="modal-header">
+        <div class="modal-title">My Farm Profile</div>
+        <button class="modal-close" onclick="App.closeModal('modal-profile')">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="profile-card-header">
+          <div class="profile-avatar-large" id="profile-avatar-display">🌾</div>
+          <div>
+            <h3 style="font-size: 1.25rem; font-weight: 800;" id="profile-name-display">Loading...</h3>
+            <div style="font-size: 0.85rem; color: var(--text-muted);" id="profile-email-display">user@farm.com</div>
+            <span class="badge badge-active" style="margin-top: 0.35rem;" id="profile-role-display">Farm Manager</span>
+          </div>
+        </div>
+
+        <form id="form-update-profile" onsubmit="App.handleProfileUpdateSubmit(event)">
+          <div class="form-group">
+            <label class="form-label">Full Name</label>
+            <input type="text" class="form-input" id="edit-profile-name" required>
+          </div>
+          <div class="grid-2">
+            <div class="form-group">
+              <label class="form-label">Operational Role</label>
+              <select class="form-select" id="edit-profile-role">
+                <option value="Farm Manager">Farm Manager</option>
+                <option value="Lead Agronomist & Operator">Lead Agronomist & Operator</option>
+                <option value="Fleet & Machinery Tech">Fleet & Machinery Tech</option>
+                <option value="Crop Scout">Crop Scout</option>
+                <option value="Owner / Partner">Owner / Partner</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Farm Organization</label>
+              <input type="text" class="form-input" id="edit-profile-farm" required>
+            </div>
+          </div>
+
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 1.5rem; padding-top: 1rem; border-top: 1px solid var(--border);">
+            <button type="button" class="btn btn-outline btn-danger btn-sm" onclick="App.handleLogout()">🚪 Log Out</button>
+            <div style="display: flex; gap: 0.5rem;">
+              <button type="button" class="btn btn-outline" onclick="App.closeModal('modal-profile')">Cancel</button>
+              <button type="submit" class="btn btn-primary">Save Profile</button>
+            </div>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Floating Interactive HarvestAI Copilot Button with Live Speech Bubble -->
+  <div class="floating-ai-wrapper" id="floating-ai-wrapper">
+    <!-- Interactive Speech Bubble Tooltip -->
+    <div class="ai-speech-bubble" id="ai-speech-bubble" onclick="App.toggleAICopilot()">
+      <span class="ai-bubble-emoji">💬</span>
+      <div class="ai-bubble-body">
+        <div class="ai-bubble-title">HarvestAI Precision Copilot</div>
+        <div class="ai-bubble-text" id="ai-bubble-text">Ask me anything about your 8 fields, crops, or machinery!</div>
+      </div>
+      <button class="ai-bubble-close" onclick="event.stopPropagation(); App.dismissAIBubble()" title="Dismiss">&times;</button>
+    </div>
+
+    <!-- Glowing Interactive Trigger Button -->
+    <button class="floating-ai-btn interactive-glow" onclick="App.toggleAICopilot()" title="Open HarvestAI Copilot">
+      <div class="ai-pulse-rings">
+        <div class="ai-ring-1"></div>
+        <div class="ai-ring-2"></div>
+      </div>
+      <div class="ai-pulse-dot"></div>
+      <span class="ai-btn-robot">🤖</span>
+      <span class="ai-btn-text">HarvestAI Copilot</span>
+      <span class="ai-btn-live-pill" id="ai-btn-user-tag">Online</span>
+    </button>
+  </div>
+
+  <!-- Slide-out HarvestAI Copilot Drawer -->
+  <div class="ai-drawer" id="ai-copilot-drawer">
+    <div class="ai-drawer-header">
+      <div class="ai-drawer-title">
+        <span style="font-size: 1.4rem;">🤖</span>
+        <div>
+          <div style="display: flex; align-items: center; gap: 0.4rem;">
+            <span>HarvestAI Copilot</span>
+            <span class="ai-drawer-status-chip">● Live Agronomy</span>
+          </div>
+          <div class="ai-drawer-user-tag" id="ai-drawer-user-tag">
+            👤 Advising: Guest Operator (Willow Creek Farm)
+          </div>
+        </div>
+      </div>
+      <div style="display: flex; align-items: center; gap: 0.4rem;">
+        <button class="btn btn-sm btn-outline" style="color: #ffffff; border-color: rgba(255,255,255,0.25); padding: 0.2rem 0.5rem;" onclick="App.clearAIChat()" title="Clear Conversation">🧹 Clear</button>
+        <button class="modal-close" style="color: #ffffff;" onclick="App.toggleAICopilot()">&times;</button>
+      </div>
+    </div>
+
+    <div class="ai-messages-container" id="ai-chat-messages">
+      <!-- Default AI Welcome Message -->
+      <div class="chat-bubble ai" id="ai-welcome-bubble">
+        <strong>🌾 Welcome to HarvestAI Precision Copilot!</strong><br><br>
+        I have full real-time telemetry across your <strong>8 fields (980 acres)</strong>, active crops, heavy machinery hours, and field spray conditions.<br><br>
+        Ask me <strong>any question</strong> or click an instant prompt:
+        <div class="chat-chips-row" id="ai-quick-chips">
+          <div class="chat-chip" onclick="App.sendQuickPrompt('Analyze pest risks across all fields')">🐛 Pest Risks</div>
+          <div class="chat-chip" onclick="App.sendQuickPrompt('Recommend next crop for North Valley')">🌾 Next Crop</div>
+          <div class="chat-chip" onclick="App.sendQuickPrompt('Summarize machinery maintenance alerts')">🔧 Fleet Alerts</div>
+          <div class="chat-chip" onclick="App.sendQuickPrompt('How can I optimize crop profit margins?')">💰 ROI Levers</div>
+          <div class="chat-chip" onclick="App.sendQuickPrompt('Is today a good day for chemical spraying?')">🌦️ Spray Window</div>
+          <div class="chat-chip" onclick="App.sendQuickPrompt('How should I manage soil pH on Ridge Creek 40?')">🌱 Soil pH Advice</div>
+        </div>
+      </div>
+
+      <!-- Typing Indicator -->
+      <div class="typing-indicator" id="ai-typing-indicator" style="display: none;">
+        <span></span><span></span><span></span>
+        <small style="color: var(--text-muted); font-size: 0.75rem; margin-left: 0.5rem;">HarvestAI is synthesizing agronomic data...</small>
+      </div>
+    </div>
+
+    <div class="ai-drawer-footer">
+      <form class="ai-input-form" onsubmit="App.handleCopilotSubmit(event)">
+        <input type="text" id="ai-user-input" placeholder="Ask any question about crops, soil, pests, machines, finances..." autocomplete="off">
+        <button type="submit" class="btn btn-primary btn-sm" id="btn-submit-ai">Ask</button>
+      </form>
+      <div style="font-size: 0.68rem; color: var(--text-muted); text-align: center; margin-top: 0.4rem;">
+        ⚡ HarvestAI combines live database telemetry, agronomic rules, and precision agricultural science.
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Notification Container -->
+  <div class="toast-container" id="toast-container"></div>
+
+  <!-- App Scripts -->
+  <script src="/src/js/api.js"></script>
+  <script src="/src/js/charts.js"></script>
+  <script src="/src/js/app.js"></script>
+</body>
+</html>

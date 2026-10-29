@@ -1,0 +1,26 @@
+{
+  "name": "harvesthub",
+  "version": "1.0.0",
+  "description": "HarvestHub: Farm Management & Crop Planning Platform",
+  "main": "server/src/index.js",
+  "scripts": {
+    "start": "node server/src/index.js",
+    "dev": "node --watch server/src/index.js",
+    "seed": "node server/src/db/seed.js",
+    "test": "node --test server/tests/api.test.js"
+  },
+  "keywords": [
+    "agriculture",
+    "farm-management",
+    "crop-rotation",
+    "field-operations",
+    "yield-tracking",
+    "equipment-maintenance"
+  ],
+  "author": "HarvestHub Team",
+  "license": "MIT",
+  "dependencies": {
+    "cors": "^2.8.5",
+    "express": "^4.21.2"
+  }
+}
